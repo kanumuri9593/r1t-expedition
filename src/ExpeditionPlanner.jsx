@@ -1030,25 +1030,6 @@ const ExpeditionPlanner = () => {
       {/* Footer */}
       <footer className="relative py-12 px-6">
         <div className="absolute inset-0 bg-gradient-to-t from-black to-slate-900" />
-        
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <p className="text-amber-400/60 tracking-[0.2em] uppercase text-xs mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-            Est. Charging Cost with Tesla SC
-          </p>
-          <p className="text-4xl font-light text-white mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
-            $135-180
-          </p>
-          <p className="text-white/40 mb-6 text-sm">
-            Saving $50-70 vs Electrify America • Off-peak optimized
-          </p>
-          
-          <div className="inline-block glass-card rounded-xl p-5">
-            <p className="text-white/60 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-              Safe travels. Leave no trace.<br />
-              <span className="text-gradient font-medium">Adventure awaits.</span>
-            </p>
-          </div>
-        </div>
       </footer>
 
       {/* Campsite Modal */}
