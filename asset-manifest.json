@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/r1t-expedition/static/css/main.f50bd327.css",
+    "main.js": "/r1t-expedition/static/js/main.28571e8f.js",
+    "index.html": "/r1t-expedition/index.html",
+    "main.f50bd327.css.map": "/r1t-expedition/static/css/main.f50bd327.css.map",
+    "main.28571e8f.js.map": "/r1t-expedition/static/js/main.28571e8f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f50bd327.css",
+    "static/js/main.28571e8f.js"
+  ]
+}
