@@ -17,6 +17,17 @@ An interactive trip planner for the ultimate Rivian R1T road trip from Jersey Ci
 
 ## 🚀 Quick Deploy to GitHub Pages
 
+## 🌟 Trip Highlights
+
+The R1T Southern Coast Expedition offers a unique blend of adventure and luxury, making it the perfect choice for road trippers. Here are some highlights:
+
+- **Stunning Coastal Views:** Experience breathtaking scenery along the southern coast, with picturesque stops that showcase nature's beauty.
+- **Tailored for the R1T:** The R1T is designed for off-road capabilities, ensuring a smooth ride on diverse terrains, from sandy beaches to rugged trails.
+- **Sustainable Travel:** Enjoy eco-friendly travel with the R1T's electric powertrain, reducing your carbon footprint while exploring.
+- **Comfort and Convenience:** With ample storage and advanced technology, the R1T provides a comfortable journey for all passengers.
+
+This trip is not just about reaching a destination; it's about the journey itself, and the R1T is the perfect vehicle to make it unforgettable.
+
 ### Step 1: Create GitHub Repository
 
 1. Go to [github.com/new](https://github.com/new)
