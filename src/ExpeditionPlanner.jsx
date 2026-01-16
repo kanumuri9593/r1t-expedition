@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const ExpeditionPlanner = () => {
   const [activeDay, setActiveDay] = useState(0);
@@ -7,6 +7,11 @@ const ExpeditionPlanner = () => {
   const [selectedCampsite, setSelectedCampsite] = useState({});
   const [showCampsiteModal, setShowCampsiteModal] = useState(null);
   const [scrollY, setScrollY] = useState(0);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [locationPermission, setLocationPermission] = useState('prompt');
+  const [notifications, setNotifications] = useState([]);
+  const [nearbyAttractions, setNearbyAttractions] = useState([]);
+  const [copySuccess, setCopySuccess] = useState(null);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
@@ -26,6 +31,154 @@ const ExpeditionPlanner = () => {
     };
   }, [showCampsiteModal]);
 
+  // Haversine formula to calculate distance between two coordinates
+  const calculateDistance = useCallback((lat1, lon1, lat2, lon2) => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }, []);
+
+  // Add notification
+  const addNotification = useCallback((message, type = 'info') => {
+    const id = Date.now();
+    setNotifications(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, 5000);
+  }, []);
+
+  // Find nearby attractions (simplified version with predefined must-visit places)
+  const findNearbyAttractions = useCallback((location) => {
+    if (!location) return;
+
+    const mustVisitPlaces = [
+      { name: 'Luray Caverns', lat: 38.6631, lng: -78.4594, type: 'landmark', icon: '🏔️' },
+      { name: 'Natural Bridge', lat: 37.6276, lng: -79.5431, type: 'landmark', icon: '🌉' },
+      { name: 'Blue Ridge Parkway Visitor Center', lat: 36.5333, lng: -81.5167, type: 'viewpoint', icon: '🏞️' },
+      { name: 'Wright Brothers Memorial', lat: 36.0133, lng: -75.6678, type: 'landmark', icon: '✈️' },
+      { name: 'Jockey\'s Ridge State Park', lat: 35.9583, lng: -75.6333, type: 'adventure', icon: '🏜️' },
+      { name: 'Pea Island National Wildlife Refuge', lat: 35.7167, lng: -75.4833, type: 'wildlife', icon: '🦅' },
+    ];
+
+    const nearby = mustVisitPlaces
+      .map(place => ({
+        ...place,
+        distance: calculateDistance(location.lat, location.lng, place.lat, place.lng)
+      }))
+      .filter(place => place.distance <= 5 && place.distance > 0)
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, 3);
+
+    if (nearby.length > 0) {
+      setNearbyAttractions(nearby);
+      nearby.forEach(place => {
+        addNotification(
+          `${place.icon} Nearby: ${place.name} (${place.distance.toFixed(1)} miles)`,
+          'attraction'
+        );
+      });
+    } else {
+      setNearbyAttractions([]);
+    }
+  }, [calculateDistance, addNotification]);
+
+  // Geolocation tracking
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setLocationPermission('unsupported');
+      return;
+    }
+
+    let watchId = null;
+    let lastCheckTime = 0;
+    const CHECK_INTERVAL = 30000; // Check every 30 seconds
+
+    const requestLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setLocationPermission('granted');
+          setCurrentLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          if (error.code === 1) {
+            setLocationPermission('denied');
+          } else {
+            setLocationPermission('error');
+          }
+        }
+      );
+    };
+
+    // Request initial permission
+    requestLocation();
+
+    // Watch position if permission granted
+    if (locationPermission === 'granted' || locationPermission === 'prompt') {
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const now = Date.now();
+          if (now - lastCheckTime < CHECK_INTERVAL) return;
+          lastCheckTime = now;
+
+          const newLocation = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          };
+          setCurrentLocation(newLocation);
+          setLocationPermission('granted');
+
+          // Check proximity to checkpoints
+          const activeDayData = dayItineraries[activeDay];
+          if (activeDayData && newLocation) {
+            activeDayData.checkpoints.forEach((checkpoint) => {
+              if (checkpoint.coordinates) {
+                const distance = calculateDistance(
+                  newLocation.lat,
+                  newLocation.lng,
+                  checkpoint.coordinates.lat,
+                  checkpoint.coordinates.lng
+                );
+                if (distance <= 10 && distance > 0) {
+                  addNotification(
+                    `📍 Approaching: ${checkpoint.title} (${distance.toFixed(1)} miles away)`,
+                    'checkpoint'
+                  );
+                }
+              }
+            });
+          }
+
+          // Find nearby attractions (simplified - using predefined locations)
+          findNearbyAttractions(newLocation);
+        },
+        (error) => {
+          if (error.code === 1) {
+            setLocationPermission('denied');
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    }
+
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [activeDay, locationPermission, addNotification, findNearbyAttractions, calculateDistance]);
+
   const toggleItem = (category, item) => {
     const key = `${category}-${item}`;
     setCompletedItems(prev => ({ ...prev, [key]: !prev[key] }));
@@ -38,6 +191,23 @@ const ExpeditionPlanner = () => {
 
   const isCompleted = (category, item) => completedItems[`${category}-${item}`];
   const isCheckpointDone = (dayNum, checkpointId) => completedCheckpoints[`day${dayNum}-${checkpointId}`];
+
+  // Copy checkpoint to clipboard
+  const copyCheckpointToClipboard = async (checkpoint, dayNum) => {
+    const formattedText = `${checkpoint.icon} ${checkpoint.time} - ${checkpoint.title}\n${checkpoint.description}${checkpoint.savings ? `\n${checkpoint.savings}` : ''}`;
+    try {
+      await navigator.clipboard.writeText(formattedText);
+      setCopySuccess(checkpoint.id);
+      setTimeout(() => setCopySuccess(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
+  // Remove notification
+  const removeNotification = (id) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
 
   const checklistCategories = [
     {
@@ -252,15 +422,15 @@ const ExpeditionPlanner = () => {
       highlight: 'Skyline Drive',
       image: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800',
       checkpoints: [
-        { id: 'dep1', time: '06:30', title: 'Depart Jersey City', type: 'start', icon: '🚀', description: 'Battery preconditioned overnight. Start with 100% charge.', mustVisit: true },
-        { id: 'charge1', time: '08:45', title: 'Tesla Supercharger - Manassas', type: 'charging', icon: '⚡', description: 'Wawa location • 8 stalls • 250kW • OFF-PEAK before 9AM = $0.29/kWh!', mustVisit: true, savings: 'Save ~$15 vs peak!' },
+        { id: 'dep1', time: '06:30', title: 'Depart Jersey City', type: 'start', icon: '🚀', description: 'Battery preconditioned overnight. Start with 100% charge.', mustVisit: true, coordinates: { lat: 40.7178, lng: -74.0431 } },
+        { id: 'charge1', time: '08:45', title: 'Tesla Supercharger - Manassas', type: 'charging', icon: '⚡', description: 'Wawa location • 8 stalls • 250kW • OFF-PEAK before 9AM = $0.29/kWh!', mustVisit: true, savings: 'Save ~$15 vs peak!', coordinates: { lat: 38.7509, lng: -77.4753 } },
         { id: 'call1', time: '10:00', title: 'Skyline Drive Status Check', type: 'call', icon: '📞', description: 'Call (540) 999-3500 to confirm road is open. Winter closures common!', mustVisit: true },
-        { id: 'enter1', time: '10:30', title: 'Enter Shenandoah - Thornton Gap', type: 'scenic', icon: '🏔️', description: 'US-211 entrance. 105 miles of Blue Ridge beauty ahead. 75+ overlooks!', mustVisit: true },
-        { id: 'view1', time: '11:30', title: 'Stony Man Overlook', type: 'viewpoint', icon: '📸', description: 'Mile 38.6 - Second highest peak in the park. Stunning valley views!', mustVisit: true },
-        { id: 'lunch1', time: '12:30', title: 'Big Meadows Lodge', type: 'food', icon: '🍽️', description: 'Historic lodge with panoramic views. Try the blackberry ice cream!', mustVisit: false },
-        { id: 'view2', time: '14:00', title: 'Dark Hollow Falls', type: 'hike', icon: '🥾', description: '1.4 mile round trip to a 70-foot waterfall. Easy trail.', mustVisit: false },
-        { id: 'exit1', time: '15:00', title: 'Exit at Swift Run Gap', type: 'milestone', icon: '🛣️', description: 'Take US-33 West. Regen braking recovers significant range on descent!', mustVisit: true },
-        { id: 'camp1', time: '17:00', title: 'Arrive Camp', type: 'camp', icon: '⛺', description: 'Set up R1T tent, enjoy mountain sunset. You made it!', mustVisit: true }
+        { id: 'enter1', time: '10:30', title: 'Enter Shenandoah - Thornton Gap', type: 'scenic', icon: '🏔️', description: 'US-211 entrance. 105 miles of Blue Ridge beauty ahead. 75+ overlooks!', mustVisit: true, coordinates: { lat: 38.6632, lng: -78.3206 } },
+        { id: 'view1', time: '11:30', title: 'Stony Man Overlook', type: 'viewpoint', icon: '📸', description: 'Mile 38.6 - Second highest peak in the park. Stunning valley views!', mustVisit: true, coordinates: { lat: 38.6250, lng: -78.3750 } },
+        { id: 'lunch1', time: '12:30', title: 'Big Meadows Lodge', type: 'food', icon: '🍽️', description: 'Historic lodge with panoramic views. Try the blackberry ice cream!', mustVisit: false, coordinates: { lat: 38.5200, lng: -78.4400 } },
+        { id: 'view2', time: '14:00', title: 'Dark Hollow Falls', type: 'hike', icon: '🥾', description: '1.4 mile round trip to a 70-foot waterfall. Easy trail.', mustVisit: false, coordinates: { lat: 38.5100, lng: -78.4300 } },
+        { id: 'exit1', time: '15:00', title: 'Exit at Swift Run Gap', type: 'milestone', icon: '🛣️', description: 'Take US-33 West. Regen braking recovers significant range on descent!', mustVisit: true, coordinates: { lat: 38.4500, lng: -78.5500 } },
+        { id: 'camp1', time: '17:00', title: 'Arrive Camp', type: 'camp', icon: '⛺', description: 'Set up R1T tent, enjoy mountain sunset. You made it!', mustVisit: true, coordinates: { lat: 38.9000, lng: -78.2000 } }
       ],
       alerts: ['WINTER CLOSURE RISK: Always call ahead!', 'BACKUP: US-29 through Charlottesville + Luray Caverns'],
       tips: ['No DCFC on Skyline - start 100%', '35 mph limit - plan 3+ hours', 'Download offline maps']
@@ -275,16 +445,16 @@ const ExpeditionPlanner = () => {
       highlight: 'Beach Driving',
       image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800',
       checkpoints: [
-        { id: 'dep2', time: '05:30', title: 'Early Departure', type: 'start', icon: '🌅', description: 'Leave early to hit Supercharger during off-peak! Longest day ahead.', mustVisit: true },
-        { id: 'charge2', time: '08:00', title: 'Tesla Supercharger - Virginia Beach', type: 'charging', icon: '⚡', description: '8 stalls • 250kW • OFF-PEAK 4AM-8AM = $0.23/kWh! BEST RATE!', mustVisit: true, savings: 'Save ~$20 vs peak!' },
-        { id: 'bridge2', time: '09:00', title: 'Hampton Roads Bridge-Tunnel', type: 'scenic', icon: '🌊', description: '3.5 mile engineering marvel. Views of naval ships and Chesapeake Bay.', mustVisit: true },
-        { id: 'enter2', time: '11:30', title: 'Cross Wright Memorial Bridge', type: 'milestone', icon: '🏝️', description: 'Welcome to the Outer Banks! Barrier island adventure begins.', mustVisit: true },
-        { id: 'stop2', time: '12:00', title: 'Bodie Island Lighthouse', type: 'photo', icon: '📸', description: 'Classic black & white striped lighthouse. Quick photo stop!', mustVisit: true },
-        { id: 'lunch2', time: '12:30', title: 'Kill Devil Grill', type: 'food', icon: '🍔', description: 'Local favorite! Try the Outer Banks fish tacos.', mustVisit: false },
-        { id: 'air2', time: '13:30', title: 'Air Down Tires - ORV Ramp 4', type: 'prep', icon: '🔧', description: 'Drop to 20 PSI. Use Soft Sand Mode. Air down BEFORE beach!', mustVisit: true },
-        { id: 'beach2', time: '14:00', title: 'Beach Driving - Cape Hatteras', type: 'adventure', icon: '🏖️', description: '20 miles of pristine beach driving. Watch for wildlife!', mustVisit: true },
-        { id: 'lighthouse2', time: '15:30', title: 'Cape Hatteras Lighthouse', type: 'landmark', icon: '🗼', description: 'Americas tallest brick lighthouse. 257 steps to the top!', mustVisit: true },
-        { id: 'camp2', time: '17:00', title: 'Oregon Inlet Campground', type: 'camp', icon: '⛺', description: 'Oceanfront camping! Set up with Atlantic sunset.', mustVisit: true }
+        { id: 'dep2', time: '05:30', title: 'Early Departure', type: 'start', icon: '🌅', description: 'Leave early to hit Supercharger during off-peak! Longest day ahead.', mustVisit: true, coordinates: { lat: 38.9000, lng: -78.2000 } },
+        { id: 'charge2', time: '08:00', title: 'Tesla Supercharger - Virginia Beach', type: 'charging', icon: '⚡', description: '8 stalls • 250kW • OFF-PEAK 4AM-8AM = $0.23/kWh! BEST RATE!', mustVisit: true, savings: 'Save ~$20 vs peak!', coordinates: { lat: 36.8529, lng: -76.0150 } },
+        { id: 'bridge2', time: '09:00', title: 'Hampton Roads Bridge-Tunnel', type: 'scenic', icon: '🌊', description: '3.5 mile engineering marvel. Views of naval ships and Chesapeake Bay.', mustVisit: true, coordinates: { lat: 36.9667, lng: -76.3000 } },
+        { id: 'enter2', time: '11:30', title: 'Cross Wright Memorial Bridge', type: 'milestone', icon: '🏝️', description: 'Welcome to the Outer Banks! Barrier island adventure begins.', mustVisit: true, coordinates: { lat: 36.0333, lng: -75.6833 } },
+        { id: 'stop2', time: '12:00', title: 'Bodie Island Lighthouse', type: 'photo', icon: '📸', description: 'Classic black & white striped lighthouse. Quick photo stop!', mustVisit: true, coordinates: { lat: 35.8181, lng: -75.5625 } },
+        { id: 'lunch2', time: '12:30', title: 'Kill Devil Grill', type: 'food', icon: '🍔', description: 'Local favorite! Try the Outer Banks fish tacos.', mustVisit: false, coordinates: { lat: 36.0167, lng: -75.6667 } },
+        { id: 'air2', time: '13:30', title: 'Air Down Tires - ORV Ramp 4', type: 'prep', icon: '🔧', description: 'Drop to 20 PSI. Use Soft Sand Mode. Air down BEFORE beach!', mustVisit: true, coordinates: { lat: 35.2500, lng: -75.5167 } },
+        { id: 'beach2', time: '14:00', title: 'Beach Driving - Cape Hatteras', type: 'adventure', icon: '🏖️', description: '20 miles of pristine beach driving. Watch for wildlife!', mustVisit: true, coordinates: { lat: 35.2167, lng: -75.6167 } },
+        { id: 'lighthouse2', time: '15:30', title: 'Cape Hatteras Lighthouse', type: 'landmark', icon: '🗼', description: 'Americas tallest brick lighthouse. 257 steps to the top!', mustVisit: true, coordinates: { lat: 35.2503, lng: -75.6178 } },
+        { id: 'camp2', time: '17:00', title: 'Oregon Inlet Campground', type: 'camp', icon: '⛺', description: 'Oceanfront camping! Set up with Atlantic sunset.', mustVisit: true, coordinates: { lat: 35.7667, lng: -75.5167 } }
       ],
       alerts: ['ORV PERMIT REQUIRED: $50 at recreation.gov', 'Check tide times before beach driving'],
       tips: ['Beach PSI: 20 for sand, 15 if stuck', 'Soft Sand Mode is your friend', 'Rinse undercarriage at camp']
@@ -299,16 +469,16 @@ const ExpeditionPlanner = () => {
       highlight: 'Barrier Island Paradise',
       image: 'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800',
       checkpoints: [
-        { id: 'pack3', time: '06:00', title: 'Pack Camp Thoroughly', type: 'prep', icon: '📦', description: 'No services on island! Ensure 80%+ battery. Pack all water/food for 36+ hrs.', mustVisit: true },
-        { id: 'dep3', time: '07:30', title: 'Depart for Davis', type: 'start', icon: '🚗', description: 'Drive south on NC-12, then west to ferry terminal.', mustVisit: true },
-        { id: 'ferry3', time: '09:30', title: 'Arrive Ferry Terminal', type: 'milestone', icon: '⛴️', description: 'Cape Lookout Cabins & Camps, Davis NC. Arrive 45 min early!', mustVisit: true },
-        { id: 'board3', time: '10:00', title: 'Board Miss Tempie/Miss Brenda', type: 'adventure', icon: '🚢', description: '45-minute crossing to paradise. Vehicle ferry $135-175.', mustVisit: true },
-        { id: 'arrive3', time: '10:45', title: 'Arrive Cape Lookout!', type: 'landmark', icon: '🏝️', description: 'Welcome to the ROADLESS barrier island. Check in at NPS office.', mustVisit: true },
-        { id: 'air3', time: '11:00', title: 'Air Down Immediately', type: 'prep', icon: '🔧', description: 'Drop to 18-20 PSI right after ferry. All driving is soft sand!', mustVisit: true },
-        { id: 'light3', time: '12:00', title: 'Cape Lookout Lighthouse', type: 'landmark', icon: '💎', description: 'The iconic diamond-patterned lighthouse. Best photos at golden hour!', mustVisit: true },
-        { id: 'explore3', time: '13:00', title: 'Explore the Island', type: 'adventure', icon: '🐎', description: 'Wild horses roam free. Dolphins offshore. Shell hunting paradise.', mustVisit: true },
-        { id: 'camp3', time: '15:00', title: 'Set Primitive Camp', type: 'camp', icon: '⛺', description: 'Above high tide, below dunes. The most incredible camping of your life.', mustVisit: true },
-        { id: 'sunset3', time: '17:30', title: 'Sunset & Stargazing', type: 'experience', icon: '🌌', description: 'Zero light pollution. Milky Way visible. Pure magic.', mustVisit: true }
+        { id: 'pack3', time: '06:00', title: 'Pack Camp Thoroughly', type: 'prep', icon: '📦', description: 'No services on island! Ensure 80%+ battery. Pack all water/food for 36+ hrs.', mustVisit: true, coordinates: { lat: 35.7667, lng: -75.5167 } },
+        { id: 'dep3', time: '07:30', title: 'Depart for Davis', type: 'start', icon: '🚗', description: 'Drive south on NC-12, then west to ferry terminal.', mustVisit: true, coordinates: { lat: 35.7667, lng: -75.5167 } },
+        { id: 'ferry3', time: '09:30', title: 'Arrive Ferry Terminal', type: 'milestone', icon: '⛴️', description: 'Cape Lookout Cabins & Camps, Davis NC. Arrive 45 min early!', mustVisit: true, coordinates: { lat: 34.9000, lng: -76.3667 } },
+        { id: 'board3', time: '10:00', title: 'Board Miss Tempie/Miss Brenda', type: 'adventure', icon: '🚢', description: '45-minute crossing to paradise. Vehicle ferry $135-175.', mustVisit: true, coordinates: { lat: 34.9000, lng: -76.3667 } },
+        { id: 'arrive3', time: '10:45', title: 'Arrive Cape Lookout!', type: 'landmark', icon: '🏝️', description: 'Welcome to the ROADLESS barrier island. Check in at NPS office.', mustVisit: true, coordinates: { lat: 34.6167, lng: -76.5333 } },
+        { id: 'air3', time: '11:00', title: 'Air Down Immediately', type: 'prep', icon: '🔧', description: 'Drop to 18-20 PSI right after ferry. All driving is soft sand!', mustVisit: true, coordinates: { lat: 34.6167, lng: -76.5333 } },
+        { id: 'light3', time: '12:00', title: 'Cape Lookout Lighthouse', type: 'landmark', icon: '💎', description: 'The iconic diamond-patterned lighthouse. Best photos at golden hour!', mustVisit: true, coordinates: { lat: 34.6075, lng: -76.5364 } },
+        { id: 'explore3', time: '13:00', title: 'Explore the Island', type: 'adventure', icon: '🐎', description: 'Wild horses roam free. Dolphins offshore. Shell hunting paradise.', mustVisit: true, coordinates: { lat: 34.6000, lng: -76.5500 } },
+        { id: 'camp3', time: '15:00', title: 'Set Primitive Camp', type: 'camp', icon: '⛺', description: 'Above high tide, below dunes. The most incredible camping of your life.', mustVisit: true, coordinates: { lat: 34.6000, lng: -76.5500 } },
+        { id: 'sunset3', time: '17:30', title: 'Sunset & Stargazing', type: 'experience', icon: '🌌', description: 'Zero light pollution. Milky Way visible. Pure magic.', mustVisit: true, coordinates: { lat: 34.6000, lng: -76.5500 } }
       ],
       alerts: ['NO CHARGING ON ISLAND - arrive 80%+!', 'FERRY MAY CANCEL - call morning of: (252) 729-9751', 'SELF-SUFFICIENT: All water/food for 36+ hours'],
       tips: ['Camp Mode uses ~1%/hr', 'Fires only below high tide line', 'Pack out EVERYTHING']
@@ -323,18 +493,18 @@ const ExpeditionPlanner = () => {
       highlight: 'Pilot Mountain Summit',
       image: 'https://images.unsplash.com/photo-1454496522488-7a8e488e8606?w=800',
       checkpoints: [
-        { id: 'pack4', time: '05:30', title: 'Pack Camp - Leave No Trace', type: 'prep', icon: '🧹', description: 'Pack everything out. Leave the island pristine.', mustVisit: true },
-        { id: 'drive4', time: '06:30', title: 'Drive to Great Island Dock', type: 'start', icon: '🚗', description: 'Return to ferry departure point.', mustVisit: true },
-        { id: 'ferry4', time: '07:30', title: 'Board Return Ferry', type: 'milestone', icon: '⛴️', description: 'First ferry of the day. Goodbye paradise!', mustVisit: true },
-        { id: 'air4', time: '08:15', title: 'Air Up at Davis', type: 'prep', icon: '🔧', description: 'Back to 42 PSI for highway driving.', mustVisit: true },
-        { id: 'charge4a', time: '08:30', title: 'Tesla Supercharger - Morehead City', type: 'charging', icon: '⚡', description: '12 stalls • V4 325kW! Fastest charging of the trip!', mustVisit: true, savings: 'V4 = 15 min to 80%!' },
+        { id: 'pack4', time: '05:30', title: 'Pack Camp - Leave No Trace', type: 'prep', icon: '🧹', description: 'Pack everything out. Leave the island pristine.', mustVisit: true, coordinates: { lat: 34.6000, lng: -76.5500 } },
+        { id: 'drive4', time: '06:30', title: 'Drive to Great Island Dock', type: 'start', icon: '🚗', description: 'Return to ferry departure point.', mustVisit: true, coordinates: { lat: 34.6000, lng: -76.5500 } },
+        { id: 'ferry4', time: '07:30', title: 'Board Return Ferry', type: 'milestone', icon: '⛴️', description: 'First ferry of the day. Goodbye paradise!', mustVisit: true, coordinates: { lat: 34.9000, lng: -76.3667 } },
+        { id: 'air4', time: '08:15', title: 'Air Up at Davis', type: 'prep', icon: '🔧', description: 'Back to 42 PSI for highway driving.', mustVisit: true, coordinates: { lat: 34.9000, lng: -76.3667 } },
+        { id: 'charge4a', time: '08:30', title: 'Tesla Supercharger - Morehead City', type: 'charging', icon: '⚡', description: '12 stalls • V4 325kW! Fastest charging of the trip!', mustVisit: true, savings: 'V4 = 15 min to 80%!', coordinates: { lat: 34.7229, lng: -76.7178 } },
         { id: 'drive4b', time: '10:30', title: 'Drive to Pilot Mountain', type: 'scenic', icon: '🛣️', description: 'Head northwest through NC Piedmont. Beautiful rural scenery.', mustVisit: true },
-        { id: 'pilot4', time: '13:00', title: 'Pilot Mountain State Park', type: 'hike', icon: '🥾', description: '1.6 mile summit hike. 360° views of the Piedmont. Iconic knob!', mustVisit: true },
-        { id: 'view4', time: '14:00', title: 'Big Pinnacle Overlook', type: 'viewpoint', icon: '📸', description: 'The money shot! Dramatic quartzite dome rising 1,400 feet.', mustVisit: true },
-        { id: 'charge4b', time: '14:30', title: 'Tesla Supercharger - Winston-Salem', type: 'charging', icon: '⚡', description: 'Quick top-up if needed. 12 stalls • 250kW.', mustVisit: false },
-        { id: 'arrive4', time: '16:00', title: 'Arrive Mount Airy', type: 'milestone', icon: '🏘️', description: 'The town that inspired Mayberry! Andy Griffith hometown.', mustVisit: true },
-        { id: 'dinner4', time: '17:00', title: 'Snappy Lunch', type: 'food', icon: '🍽️', description: 'Famous pork chop sandwich since 1923. A MUST!', mustVisit: true },
-        { id: 'floyd4', time: '18:00', title: 'Floyds Barber Shop', type: 'landmark', icon: '💈', description: 'The original shop from Andy Griffith Show. Photo op!', mustVisit: false }
+        { id: 'pilot4', time: '13:00', title: 'Pilot Mountain State Park', type: 'hike', icon: '🥾', description: '1.6 mile summit hike. 360° views of the Piedmont. Iconic knob!', mustVisit: true, coordinates: { lat: 36.3417, lng: -80.4700 } },
+        { id: 'view4', time: '14:00', title: 'Big Pinnacle Overlook', type: 'viewpoint', icon: '📸', description: 'The money shot! Dramatic quartzite dome rising 1,400 feet.', mustVisit: true, coordinates: { lat: 36.3417, lng: -80.4700 } },
+        { id: 'charge4b', time: '14:30', title: 'Tesla Supercharger - Winston-Salem', type: 'charging', icon: '⚡', description: 'Quick top-up if needed. 12 stalls • 250kW.', mustVisit: false, coordinates: { lat: 36.0999, lng: -80.2442 } },
+        { id: 'arrive4', time: '16:00', title: 'Arrive Mount Airy', type: 'milestone', icon: '🏘️', description: 'The town that inspired Mayberry! Andy Griffith hometown.', mustVisit: true, coordinates: { lat: 36.4996, lng: -80.6073 } },
+        { id: 'dinner4', time: '17:00', title: 'Snappy Lunch', type: 'food', icon: '🍽️', description: 'Famous pork chop sandwich since 1923. A MUST!', mustVisit: true, coordinates: { lat: 36.4996, lng: -80.6073 } },
+        { id: 'floyd4', time: '18:00', title: 'Floyds Barber Shop', type: 'landmark', icon: '💈', description: 'The original shop from Andy Griffith Show. Photo op!', mustVisit: false, coordinates: { lat: 36.4996, lng: -80.6073 } }
       ],
       alerts: ['CONFIRM FERRY: Call by 9 AM - (252) 729-9751', 'Air up before highway!'],
       tips: ['Pilot Mountain: moderate 1.6 mi hike', 'Snappy Lunch closes early!', 'Hotel = hot shower heaven']
@@ -349,16 +519,16 @@ const ExpeditionPlanner = () => {
       highlight: 'Mission Complete',
       image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800',
       checkpoints: [
-        { id: 'dep5', time: '05:00', title: 'Ultra Early Departure', type: 'start', icon: '🌙', description: 'Leave in darkness to hit BOTH chargers at off-peak rates!', mustVisit: true },
+        { id: 'dep5', time: '05:00', title: 'Ultra Early Departure', type: 'start', icon: '🌙', description: 'Leave in darkness to hit BOTH chargers at off-peak rates!', mustVisit: true, coordinates: { lat: 36.4996, lng: -80.6073 } },
         { id: 'drive5a', time: '05:30', title: 'I-77 North to I-81', type: 'scenic', icon: '🛣️', description: 'Beautiful mountain highway. Driver+ ready for the long haul.', mustVisit: true },
-        { id: 'charge5a', time: '07:30', title: 'Tesla Supercharger - Wytheville', type: 'charging', icon: '⚡', description: '6 stalls • 150kW • OFF-PEAK = $0.33/kWh with Tesla Sub!', mustVisit: true, savings: 'Save ~$10 vs peak!' },
-        { id: 'breakfast5', time: '08:00', title: 'Waffle House Breakfast', type: 'food', icon: '🧇', description: 'Classic road trip fuel. Right next to Supercharger!', mustVisit: false },
+        { id: 'charge5a', time: '07:30', title: 'Tesla Supercharger - Wytheville', type: 'charging', icon: '⚡', description: '6 stalls • 150kW • OFF-PEAK = $0.33/kWh with Tesla Sub!', mustVisit: true, savings: 'Save ~$10 vs peak!', coordinates: { lat: 36.9487, lng: -81.0844 } },
+        { id: 'breakfast5', time: '08:00', title: 'Waffle House Breakfast', type: 'food', icon: '🧇', description: 'Classic road trip fuel. Right next to Supercharger!', mustVisit: false, coordinates: { lat: 36.9487, lng: -81.0844 } },
         { id: 'drive5b', time: '08:30', title: 'I-81 Scenic Corridor', type: 'scenic', icon: '🏔️', description: 'Shenandoah Valley views. Rolling hills and farmland.', mustVisit: true },
-        { id: 'charge5b', time: '11:00', title: 'Tesla Supercharger - Harrisburg', type: 'charging', icon: '⚡', description: '12 stalls • V4 325kW! • OFF-PEAK before 9AM = $0.27/kWh!', mustVisit: true, savings: 'V4 = 15 min charge!' },
-        { id: 'lunch5', time: '12:00', title: 'Lunch Break - Harrisburg', type: 'food', icon: '🍕', description: 'Stretch your legs. Final meal on the road.', mustVisit: false },
+        { id: 'charge5b', time: '11:00', title: 'Tesla Supercharger - Harrisburg', type: 'charging', icon: '⚡', description: '12 stalls • V4 325kW! • OFF-PEAK before 9AM = $0.27/kWh!', mustVisit: true, savings: 'V4 = 15 min charge!', coordinates: { lat: 40.2737, lng: -76.8844 } },
+        { id: 'lunch5', time: '12:00', title: 'Lunch Break - Harrisburg', type: 'food', icon: '🍕', description: 'Stretch your legs. Final meal on the road.', mustVisit: false, coordinates: { lat: 40.2737, lng: -76.8844 } },
         { id: 'drive5c', time: '12:30', title: 'I-78 Final Push', type: 'milestone', icon: '🏁', description: 'Last leg home. 2.5 hours to Jersey City!', mustVisit: true },
-        { id: 'home5', time: '15:00', title: 'ARRIVE HOME!', type: 'finish', icon: '🏠', description: '1,400+ miles complete! Park the R1T. You did it!', mustVisit: true },
-        { id: 'clean5', time: '16:00', title: 'Clean Salt & Sand', type: 'maintenance', icon: '🧽', description: 'Rinse undercarriage within 48 hours. Protect your R1T!', mustVisit: true }
+        { id: 'home5', time: '15:00', title: 'ARRIVE HOME!', type: 'finish', icon: '🏠', description: '1,400+ miles complete! Park the R1T. You did it!', mustVisit: true, coordinates: { lat: 40.7178, lng: -74.0431 } },
+        { id: 'clean5', time: '16:00', title: 'Clean Salt & Sand', type: 'maintenance', icon: '🧽', description: 'Rinse undercarriage within 48 hours. Protect your R1T!', mustVisit: true, coordinates: { lat: 40.7178, lng: -74.0431 } }
       ],
       alerts: ['Keep speed 65-70 mph for optimal range', 'Clean undercarriage within days!'],
       tips: ['Precondition 30 min before each stop', 'Driver+ is your friend on I-81', 'Charge to 80% in Harrisburg - enough for home']
@@ -699,154 +869,6 @@ const ExpeditionPlanner = () => {
         </div>
       </section>
 
-      {/* Checklist Section */}
-      <section className="relative py-20 px-6">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950" />
-        <div className="absolute inset-0 noise-overlay pointer-events-none" />
-        
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-amber-400/80 tracking-[0.3em] uppercase text-sm mb-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-              Pre-Flight Checklist
-            </p>
-            <h2 className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Everything You Need
-            </h2>
-          </div>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            {checklistCategories.map((category, cidx) => (
-              <div key={category.id} className="glass-card rounded-2xl overflow-hidden transition-all duration-500 hover:border-amber-500/20">
-                <div className={`h-1.5 bg-gradient-to-r ${category.gradient}`} />
-                <div className="p-6">
-                  <div className="flex items-center gap-3 mb-5">
-                    <span className="text-3xl">{category.icon}</span>
-                    <h3 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
-                      {category.title}
-                    </h3>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {category.items.map((item, iidx) => (
-                      <button
-                        key={iidx}
-                        onClick={() => toggleItem(category.id, item.name)}
-                        className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all duration-300 text-left ${
-                          isCompleted(category.id, item.name)
-                            ? 'bg-emerald-500/10 border border-emerald-500/30'
-                            : 'bg-white/5 border border-white/10 hover:border-amber-500/30 hover:bg-white/10'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${
-                          isCompleted(category.id, item.name) ? 'bg-emerald-500 text-white' : 'bg-white/10 border border-white/20'
-                        }`}>
-                          {isCompleted(category.id, item.name) && <span className="text-xs">✓</span>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`font-medium text-sm transition-all duration-300 ${
-                              isCompleted(category.id, item.name) ? 'text-emerald-400 line-through' : 'text-white'
-                            }`} style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                              {item.name}
-                            </p>
-                            {item.critical && !isCompleted(category.id, item.name) && (
-                              <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full">Critical</span>
-                            )}
-                          </div>
-                          <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                            {item.details}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Campsite Selection Section */}
-      <section className="relative py-20 px-6">
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950" />
-        
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <div className="text-center mb-12">
-            <p className="text-amber-400/80 tracking-[0.3em] uppercase text-sm mb-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-              Your Adventure Awaits
-            </p>
-            <h2 className="text-4xl md:text-5xl font-light text-white mb-3" style={{ fontFamily: 'Playfair Display, serif' }}>
-              Choose Your <span className="text-gradient">Campsites</span>
-            </h2>
-            <p className="text-white/50 max-w-2xl mx-auto text-sm">
-              Four nights of breathtaking views from your R1T tent. Tap to explore options.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {['day1', 'day2', 'day3', 'day4'].map((dayKey, idx) => {
-              const dayNum = idx + 1;
-              const dayInfo = dayItineraries[idx];
-              const selected = selectedCampsite[dayKey];
-              const options = campsiteOptions[dayKey];
-              const selectedSite = options?.find(s => s.name === selected);
-              
-              return (
-                <div
-                  key={dayKey}
-                  onClick={() => setShowCampsiteModal(dayKey)}
-                  className="group relative glass-card rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:border-amber-500/30"
-                >
-                  <div className="absolute inset-0 overflow-hidden">
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
-                      style={{ 
-                        backgroundImage: `url(${selectedSite?.image || options?.[0]?.image})`,
-                        filter: 'brightness(0.4)'
-                      }}
-                    />
-                  </div>
-                  
-                  <div className="relative p-6 h-72 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="px-3 py-1 bg-black/40 backdrop-blur-sm rounded-full text-amber-400 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                          Day {dayNum}
-                        </span>
-                        {selected && (
-                          <span className="w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm">✓</span>
-                          </span>
-                        )}
-                      </div>
-                      
-                      <h3 className="text-xl font-light text-white mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
-                        {dayInfo.title}
-                      </h3>
-                      <p className="text-white/60 text-sm">{dayInfo.route}</p>
-                    </div>
-                    
-                    <div>
-                      {selected ? (
-                        <div className="glass-card rounded-xl p-3">
-                          <p className="text-amber-400 text-sm font-medium">{selected}</p>
-                          <p className="text-white/50 text-xs mt-0.5">{selectedSite?.vibe}</p>
-                        </div>
-                      ) : (
-                        <div className="glass-card rounded-xl p-3 border-dashed border-amber-500/30 bg-amber-500/5">
-                          <p className="text-amber-400/80 text-sm">Tap to select campsite →</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
       {/* Day-by-Day Timeline Section */}
       <section className="relative py-20 px-6">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950" />
@@ -964,10 +986,9 @@ const ExpeditionPlanner = () => {
                       
                       {/* Content Card */}
                       <div 
-                        className={`glass-card rounded-xl p-4 transition-all duration-300 cursor-pointer hover:border-amber-500/30 ${
+                        className={`glass-card rounded-xl p-4 transition-all duration-300 ${
                           checkpoint.mustVisit ? 'border-l-2 border-l-amber-500' : ''
                         } ${isCheckpointDone(day.num, checkpoint.id) ? 'bg-emerald-500/5' : ''}`}
-                        onClick={() => toggleCheckpoint(day.num, checkpoint.id)}
                       >
                         <div className="flex items-start justify-between gap-4">
                           <div className="flex-1">
@@ -993,12 +1014,31 @@ const ExpeditionPlanner = () => {
                               {checkpoint.description}
                             </p>
                           </div>
-                          <div className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-all ${
-                            isCheckpointDone(day.num, checkpoint.id)
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-white/10 border border-white/20'
-                          }`}>
-                            {isCheckpointDone(day.num, checkpoint.id) && <span className="text-xs">✓</span>}
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                copyCheckpointToClipboard(checkpoint, day.num);
+                              }}
+                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                                copySuccess === checkpoint.id
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-white/10 hover:bg-white/20 text-white/60 hover:text-white'
+                              }`}
+                              title="Copy checkpoint details"
+                            >
+                              {copySuccess === checkpoint.id ? '✓' : '📋'}
+                            </button>
+                            <div 
+                              className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-all cursor-pointer ${
+                                isCheckpointDone(day.num, checkpoint.id)
+                                  ? 'bg-emerald-500 text-white'
+                                  : 'bg-white/10 border border-white/20'
+                              }`}
+                              onClick={() => toggleCheckpoint(day.num, checkpoint.id)}
+                            >
+                              {isCheckpointDone(day.num, checkpoint.id) && <span className="text-xs">✓</span>}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1025,6 +1065,154 @@ const ExpeditionPlanner = () => {
               )}
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Campsite Selection Section */}
+      <section className="relative py-20 px-6">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950" />
+        
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-amber-400/80 tracking-[0.3em] uppercase text-sm mb-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              Your Adventure Awaits
+            </p>
+            <h2 className="text-4xl md:text-5xl font-light text-white mb-3" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Choose Your <span className="text-gradient">Campsites</span>
+            </h2>
+            <p className="text-white/50 max-w-2xl mx-auto text-sm">
+              Four nights of breathtaking views from your R1T tent. Tap to explore options.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {['day1', 'day2', 'day3', 'day4'].map((dayKey, idx) => {
+              const dayNum = idx + 1;
+              const dayInfo = dayItineraries[idx];
+              const selected = selectedCampsite[dayKey];
+              const options = campsiteOptions[dayKey];
+              const selectedSite = options?.find(s => s.name === selected);
+              
+              return (
+                <div
+                  key={dayKey}
+                  onClick={() => setShowCampsiteModal(dayKey)}
+                  className="group relative glass-card rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:border-amber-500/30"
+                >
+                  <div className="absolute inset-0 overflow-hidden">
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110"
+                      style={{ 
+                        backgroundImage: `url(${selectedSite?.image || options?.[0]?.image})`,
+                        filter: 'brightness(0.4)'
+                      }}
+                    />
+                  </div>
+                  
+                  <div className="relative p-6 h-72 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="px-3 py-1 bg-black/40 backdrop-blur-sm rounded-full text-amber-400 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                          Day {dayNum}
+                        </span>
+                        {selected && (
+                          <span className="w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm">✓</span>
+                          </span>
+                        )}
+                      </div>
+                      
+                      <h3 className="text-xl font-light text-white mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
+                        {dayInfo.title}
+                      </h3>
+                      <p className="text-white/60 text-sm">{dayInfo.route}</p>
+                    </div>
+                    
+                    <div>
+                      {selected ? (
+                        <div className="glass-card rounded-xl p-3">
+                          <p className="text-amber-400 text-sm font-medium">{selected}</p>
+                          <p className="text-white/50 text-xs mt-0.5">{selectedSite?.vibe}</p>
+                        </div>
+                      ) : (
+                        <div className="glass-card rounded-xl p-3 border-dashed border-amber-500/30 bg-amber-500/5">
+                          <p className="text-amber-400/80 text-sm">Tap to select campsite →</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Checklist Section */}
+      <section className="relative py-20 px-6">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950" />
+        <div className="absolute inset-0 noise-overlay pointer-events-none" />
+        
+        <div className="relative z-10 max-w-7xl mx-auto">
+          <div className="text-center mb-12">
+            <p className="text-amber-400/80 tracking-[0.3em] uppercase text-sm mb-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              Pre-Flight Checklist
+            </p>
+            <h2 className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Everything You Need
+            </h2>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            {checklistCategories.map((category, cidx) => (
+              <div key={category.id} className="glass-card rounded-2xl overflow-hidden transition-all duration-500 hover:border-amber-500/20">
+                <div className={`h-1.5 bg-gradient-to-r ${category.gradient}`} />
+                <div className="p-6">
+                  <div className="flex items-center gap-3 mb-5">
+                    <span className="text-3xl">{category.icon}</span>
+                    <h3 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                      {category.title}
+                    </h3>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    {category.items.map((item, iidx) => (
+                      <button
+                        key={iidx}
+                        onClick={() => toggleItem(category.id, item.name)}
+                        className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all duration-300 text-left ${
+                          isCompleted(category.id, item.name)
+                            ? 'bg-emerald-500/10 border border-emerald-500/30'
+                            : 'bg-white/5 border border-white/10 hover:border-amber-500/30 hover:bg-white/10'
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${
+                          isCompleted(category.id, item.name) ? 'bg-emerald-500 text-white' : 'bg-white/10 border border-white/20'
+                        }`}>
+                          {isCompleted(category.id, item.name) && <span className="text-xs">✓</span>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className={`font-medium text-sm transition-all duration-300 ${
+                              isCompleted(category.id, item.name) ? 'text-emerald-400 line-through' : 'text-white'
+                            }`} style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                              {item.name}
+                            </p>
+                            {item.critical && !isCompleted(category.id, item.name) && (
+                              <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-xs rounded-full">Critical</span>
+                            )}
+                          </div>
+                          <p className="text-white/40 text-xs mt-0.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                            {item.details}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -1082,6 +1270,73 @@ const ExpeditionPlanner = () => {
           dayKey={showCampsiteModal} 
           onClose={() => setShowCampsiteModal(null)} 
         />
+      )}
+
+      {/* Notifications */}
+      <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
+        {notifications.map((notification) => (
+          <div
+            key={notification.id}
+            className={`glass-card rounded-xl p-4 shadow-lg border ${
+              notification.type === 'checkpoint'
+                ? 'border-amber-500/30 bg-amber-500/10'
+                : notification.type === 'attraction'
+                ? 'border-blue-500/30 bg-blue-500/10'
+                : 'border-white/20'
+            } animate-slide-up`}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <p className="text-white text-sm flex-1">{notification.message}</p>
+              <button
+                onClick={() => removeNotification(notification.id)}
+                className="text-white/40 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Location Permission Prompt */}
+      {locationPermission === 'denied' && (
+        <div className="fixed bottom-4 left-4 z-50 max-w-sm">
+          <div className="glass-card rounded-xl p-4 border border-amber-500/30 bg-amber-500/10">
+            <p className="text-white text-sm mb-3">
+              Enable location to get alerts for nearby checkpoints and attractions!
+            </p>
+            <button
+              onClick={() => {
+                setLocationPermission('prompt');
+                navigator.geolocation.getCurrentPosition(
+                  () => setLocationPermission('granted'),
+                  () => setLocationPermission('denied')
+                );
+              }}
+              className="w-full px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg transition-colors text-sm font-medium"
+            >
+              Enable Location
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Nearby Attractions Panel */}
+      {nearbyAttractions.length > 0 && currentLocation && (
+        <div className="fixed top-20 right-4 z-40 max-w-xs">
+          <div className="glass-card rounded-xl p-4 border border-blue-500/30">
+            <h4 className="text-blue-400 text-sm font-medium mb-3 flex items-center gap-2">
+              <span>📍</span> Nearby Attractions
+            </h4>
+            <div className="space-y-2">
+              {nearbyAttractions.map((place, idx) => (
+                <div key={idx} className="text-white/70 text-xs">
+                  {place.icon} {place.name} ({place.distance.toFixed(1)} mi)
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

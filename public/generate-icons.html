@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Icon Generator</title>
+</head>
+<body>
+  <h1>R1T Expedition Icon Generator</h1>
+  <p>Click the buttons below to generate and download icons:</p>
+  
+  <canvas id="icon192" width="192" height="192" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+  <canvas id="icon512" width="512" height="512" style="border: 1px solid #ccc; margin: 10px;"></canvas>
+  
+  <br>
+  <button onclick="generateIcon(192)">Generate & Download 192x192</button>
+  <button onclick="generateIcon(512)">Generate & Download 512x512</button>
+
+  <script>
+    function generateIcon(size) {
+      const canvas = document.getElementById(`icon${size}`);
+      const ctx = canvas.getContext('2d');
+      
+      // Background
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, size, size);
+      
+      // Draw R1T text/logo
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = `bold ${size * 0.3}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('R1T', size / 2, size / 2 - size * 0.1);
+      
+      ctx.font = `${size * 0.1}px Arial`;
+      ctx.fillText('EXPEDITION', size / 2, size / 2 + size * 0.1);
+      
+      // Download
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `icon-${size}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+    
+    // Generate on load
+    window.onload = () => {
+      generateIcon(192);
+      generateIcon(512);
+    };
+  </script>
+</body>
+</html>

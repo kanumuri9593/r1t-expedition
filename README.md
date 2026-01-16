@@ -8,12 +8,15 @@ An interactive trip planner for the ultimate Rivian R1T road trip from Jersey Ci
 
 ## ✨ Features
 
-- 📋 Interactive pre-trip checklist
-- ⛺ Campsite selector with 3 beautiful options per night
-- 🗺️ Day-by-day timeline with must-visit checkpoints
-- ⚡ Tesla Supercharger optimization (off-peak savings!)
-- 📞 Emergency contacts
-- 📱 Fully responsive design
+- 🗺️ **Day-by-Day Road Trip Itinerary** - Detailed timeline with checkpoints, times, and descriptions (now at the top!)
+- ⛺ **Campsite Selection** - Choose from 3 beautiful options per night
+- 📋 **Interactive Pre-Trip Checklist** - Track your preparation progress
+- 📋 **Copy-to-Clipboard** - Copy any checkpoint details with one click
+- 📍 **Geolocation Notifications** - Get alerts when approaching checkpoints and nearby attractions
+- ⚡ **Tesla Supercharger Optimization** - Off-peak savings tips!
+- 📞 **Emergency Contacts** - Quick access to important numbers
+- 📱 **Progressive Web App (PWA)** - Install on your iPhone for offline access
+- 🎨 **Fully Responsive Design** - Works beautifully on all devices
 
 ## 🚀 Quick Deploy to GitHub Pages
 
@@ -123,12 +126,44 @@ npm start
 npm run build
 ```
 
+## 📱 Install as PWA on iPhone
+
+1. Open the app in Safari on your iPhone
+2. Tap the **Share** button (square with arrow)
+3. Scroll down and tap **"Add to Home Screen"**
+4. Customize the name if desired
+5. Tap **"Add"**
+6. The app will now appear on your home screen and work offline!
+
+### Generating App Icons
+
+Before deploying, generate the required icon files:
+
+1. Open `public/generate-icons.html` in your browser
+2. Click the buttons to generate and download `icon-192.png` and `icon-512.png`
+3. Place both files in the `public/` directory
+4. Alternatively, use the `generate-icons.js` script (requires Node.js)
+
+## 📍 Geolocation Features
+
+The app can track your location and provide:
+- **Checkpoint Proximity Alerts** - Notifications when within 10 miles of itinerary checkpoints
+- **Nearby Attractions** - Alerts for must-visit places along your route (within 5 miles)
+- **Location Permission** - Enable location services when prompted for the best experience
+
+Note: Location features require HTTPS (or localhost for development).
+
+## 📋 Copy-to-Clipboard
+
+Click the 📋 button on any checkpoint card to copy its details to your clipboard. Perfect for sharing or taking notes!
+
 ## 📱 Share Your Trip
 
 Once deployed, share the URL with friends and family:
 - They can view the full itinerary
 - Track their own checklist progress (stored locally)
 - Select campsites together
+- Install as PWA on their devices
 
 ---
 
