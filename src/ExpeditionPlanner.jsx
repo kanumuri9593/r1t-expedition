@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import AddToHomeScreen from './AddToHomeScreen';
 
 const ExpeditionPlanner = () => {
   const [activeDay, setActiveDay] = useState(0);
@@ -713,6 +714,8 @@ const ExpeditionPlanner = () => {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white overflow-x-hidden" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      {/* Add to Home Screen Popup */}
+      <AddToHomeScreen />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap');
         
@@ -774,6 +777,25 @@ const ExpeditionPlanner = () => {
         .scrollbar-thin::-webkit-scrollbar-thumb:hover {
           background: rgba(251,191,36,0.5);
         }
+        
+        /* Mobile optimizations */
+        @media (max-width: 640px) {
+          /* Improve touch targets */
+          button, a, [role="button"] {
+            min-height: 44px;
+            min-width: 44px;
+          }
+          
+          /* Prevent text size adjustment on iOS */
+          input, textarea, select {
+            font-size: 16px !important;
+          }
+        }
+        
+        /* Touch manipulation for better mobile performance */
+        .touch-manipulation {
+          touch-action: manipulation;
+        }
       `}</style>
 
       {/* Hero Section */}
@@ -805,7 +827,7 @@ const ExpeditionPlanner = () => {
           </div>
           
           <h1 
-            className="text-5xl md:text-7xl lg:text-8xl font-light mb-6 animate-slide-up"
+            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light mb-6 animate-slide-up px-4"
             style={{ fontFamily: 'Playfair Display, serif', animationDelay: '0.2s' }}
           >
             <span className="text-white">R1T</span>
@@ -815,25 +837,25 @@ const ExpeditionPlanner = () => {
             <span className="text-gradient"> Expedition</span>
           </h1>
           
-          <div className="flex flex-wrap justify-center gap-6 md:gap-12 mb-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6 md:gap-12 mb-12 animate-slide-up px-4" style={{ animationDelay: '0.3s' }}>
             <div className="text-center">
-              <p className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>Two Friends</p>
-              <p className="text-white/40 text-sm tracking-wider uppercase">Adventurers</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>Two Friends</p>
+              <p className="text-white/40 text-xs sm:text-sm tracking-wider uppercase">Adventurers</p>
             </div>
-            <div className="w-px bg-white/10 hidden md:block" />
+            <div className="w-px bg-white/10 hidden sm:block" />
             <div className="text-center">
-              <p className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>1,400+</p>
-              <p className="text-white/40 text-sm tracking-wider uppercase">Miles</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>1,400+</p>
+              <p className="text-white/40 text-xs sm:text-sm tracking-wider uppercase">Miles</p>
             </div>
-            <div className="w-px bg-white/10 hidden md:block" />
+            <div className="w-px bg-white/10 hidden sm:block" />
             <div className="text-center">
-              <p className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>5</p>
-              <p className="text-white/40 text-sm tracking-wider uppercase">Days</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>5</p>
+              <p className="text-white/40 text-xs sm:text-sm tracking-wider uppercase">Days</p>
             </div>
-            <div className="w-px bg-white/10 hidden md:block" />
+            <div className="w-px bg-white/10 hidden sm:block" />
             <div className="text-center">
-              <p className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>3</p>
-              <p className="text-white/40 text-sm tracking-wider uppercase">States</p>
+              <p className="text-3xl sm:text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>3</p>
+              <p className="text-white/40 text-xs sm:text-sm tracking-wider uppercase">States</p>
             </div>
           </div>
           
@@ -867,19 +889,19 @@ const ExpeditionPlanner = () => {
           </div>
           
           {/* Day Selector */}
-          <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin justify-center">
+          <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin justify-start md:justify-center px-4 md:px-0 -mx-4 md:mx-0">
             {dayItineraries.map((day, idx) => (
               <button
                 key={idx}
                 onClick={() => setActiveDay(idx)}
-                className={`flex-shrink-0 px-5 py-3 rounded-xl transition-all duration-300 ${
+                className={`flex-shrink-0 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl transition-all duration-300 touch-manipulation ${
                   activeDay === idx
                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg shadow-amber-500/30'
-                    : 'glass-card text-white/60 hover:text-white hover:border-amber-500/30'
+                    : 'glass-card text-white/60 active:text-white hover:text-white hover:border-amber-500/30'
                 }`}
               >
                 <span className="block text-xs opacity-70 mb-0.5" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Day {day.num}</span>
-                <span className="block font-medium text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>{day.title}</span>
+                <span className="block font-medium text-xs sm:text-sm whitespace-nowrap" style={{ fontFamily: 'DM Sans, sans-serif' }}>{day.title}</span>
               </button>
             ))}
           </div>
@@ -898,26 +920,26 @@ const ExpeditionPlanner = () => {
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 to-transparent md:hidden" />
                   </div>
                   <div className="md:w-2/3 p-6">
-                    <div className="flex flex-wrap items-center gap-3 mb-3">
-                      <span className="text-5xl font-light text-gradient" style={{ fontFamily: 'Playfair Display, serif' }}>{day.num}</span>
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-3">
+                      <span className="text-4xl sm:text-5xl font-light text-gradient" style={{ fontFamily: 'Playfair Display, serif' }}>{day.num}</span>
                       <div>
-                        <h3 className="text-2xl text-white font-medium" style={{ fontFamily: 'Playfair Display, serif' }}>{day.title}</h3>
-                        <p className="text-white/50 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{day.date}</p>
+                        <h3 className="text-xl sm:text-2xl text-white font-medium" style={{ fontFamily: 'Playfair Display, serif' }}>{day.title}</h3>
+                        <p className="text-white/50 text-xs sm:text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>{day.date}</p>
                       </div>
                     </div>
                     
-                    <div className="flex flex-wrap gap-4 mb-4">
+                    <div className="flex flex-wrap gap-3 sm:gap-4 mb-4">
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">🛣️</span>
-                        <span className="text-white/70 text-sm">{day.miles} miles</span>
+                        <span className="text-base sm:text-lg">🛣️</span>
+                        <span className="text-white/70 text-xs sm:text-sm">{day.miles} miles</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">🌡️</span>
-                        <span className="text-white/70 text-sm">{day.weather}</span>
+                        <span className="text-base sm:text-lg">🌡️</span>
+                        <span className="text-white/70 text-xs sm:text-sm">{day.weather}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-lg">✨</span>
-                        <span className="text-amber-400 text-sm font-medium">{day.highlight}</span>
+                        <span className="text-base sm:text-lg">✨</span>
+                        <span className="text-amber-400 text-xs sm:text-sm font-medium">{day.highlight}</span>
                       </div>
                     </div>
                     
@@ -939,21 +961,21 @@ const ExpeditionPlanner = () => {
               )}
 
               {/* Timeline */}
-              <div className="relative">
-                <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500/50 via-amber-500/20 to-transparent" />
+              <div className="relative px-4 md:px-0">
+                <div className="absolute left-4 md:left-6 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500/50 via-amber-500/20 to-transparent" />
                 
                 <div className="space-y-4">
                   {day.checkpoints.map((checkpoint, cpIdx) => (
                     <div 
                       key={checkpoint.id}
-                      className={`relative pl-16 transition-all duration-300 ${
+                      className={`relative pl-12 md:pl-16 transition-all duration-300 ${
                         isCheckpointDone(day.num, checkpoint.id) ? 'opacity-60' : ''
                       }`}
                     >
                       {/* Timeline Node */}
                       <button
                         onClick={() => toggleCheckpoint(day.num, checkpoint.id)}
-                        className={`absolute left-3 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        className={`absolute left-1 md:left-3 w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center transition-all duration-300 touch-manipulation active:scale-95 ${
                           isCheckpointDone(day.num, checkpoint.id)
                             ? 'bg-emerald-500 text-white'
                             : `bg-gradient-to-br ${getCheckpointColor(checkpoint.type)} text-white shadow-lg`
@@ -969,13 +991,13 @@ const ExpeditionPlanner = () => {
                       
                       {/* Content Card */}
                       <div 
-                        className={`glass-card rounded-xl p-4 transition-all duration-300 ${
+                        className={`glass-card rounded-xl p-3 sm:p-4 transition-all duration-300 ${
                           checkpoint.mustVisit ? 'border-l-2 border-l-amber-500' : ''
                         } ${isCheckpointDone(day.num, checkpoint.id) ? 'bg-emerald-500/5' : ''}`}
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-1 flex-wrap">
+                        <div className="flex items-start justify-between gap-3 sm:gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 sm:gap-3 mb-1 flex-wrap">
                               <span className="text-amber-400 text-xs font-medium px-2 py-0.5 bg-amber-500/20 rounded-full" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
                                 {checkpoint.time}
                               </span>
@@ -988,32 +1010,32 @@ const ExpeditionPlanner = () => {
                                 </span>
                               )}
                             </div>
-                            <h4 className={`text-lg font-medium mb-1 ${
+                            <h4 className={`text-base sm:text-lg font-medium mb-1 ${
                               isCheckpointDone(day.num, checkpoint.id) ? 'text-emerald-400 line-through' : 'text-white'
                             }`} style={{ fontFamily: 'DM Sans, sans-serif' }}>
                               {checkpoint.title}
                             </h4>
-                            <p className="text-white/50 text-sm leading-relaxed">
+                            <p className="text-white/50 text-xs sm:text-sm leading-relaxed">
                               {checkpoint.description}
                             </p>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyCheckpointToClipboard(checkpoint, day.num);
                               }}
-                              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center transition-all touch-manipulation active:scale-95 ${
                                 copySuccess === checkpoint.id
                                   ? 'bg-emerald-500 text-white'
-                                  : 'bg-white/10 hover:bg-white/20 text-white/60 hover:text-white'
+                                  : 'bg-white/10 active:bg-white/20 text-white/60 active:text-white'
                               }`}
                               title="Copy checkpoint details"
                             >
                               {copySuccess === checkpoint.id ? '✓' : '📋'}
                             </button>
-                            <div 
-                              className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center transition-all cursor-pointer ${
+                            <button
+                              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-md flex-shrink-0 flex items-center justify-center transition-all touch-manipulation active:scale-95 ${
                                 isCheckpointDone(day.num, checkpoint.id)
                                   ? 'bg-emerald-500 text-white'
                                   : 'bg-white/10 border border-white/20'
@@ -1021,7 +1043,7 @@ const ExpeditionPlanner = () => {
                               onClick={() => toggleCheckpoint(day.num, checkpoint.id)}
                             >
                               {isCheckpointDone(day.num, checkpoint.id) && <span className="text-xs">✓</span>}
-                            </div>
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -1068,7 +1090,7 @@ const ExpeditionPlanner = () => {
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {['day1', 'day2', 'day3', 'day4'].map((dayKey, idx) => {
               const dayNum = idx + 1;
               const dayInfo = dayItineraries[idx];
@@ -1427,10 +1449,10 @@ const ExpeditionPlanner = () => {
                       <button
                         key={iidx}
                         onClick={() => toggleItem(category.id, item.name)}
-                        className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all duration-300 text-left ${
+                        className={`w-full flex items-start gap-3 p-3 rounded-xl transition-all duration-300 text-left touch-manipulation active:scale-[0.98] ${
                           isCompleted(category.id, item.name)
                             ? 'bg-emerald-500/10 border border-emerald-500/30'
-                            : 'bg-white/5 border border-white/10 hover:border-amber-500/30 hover:bg-white/10'
+                            : 'bg-white/5 border border-white/10 active:border-amber-500/30 active:bg-white/10'
                         }`}
                       >
                         <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-300 ${
@@ -1477,7 +1499,7 @@ const ExpeditionPlanner = () => {
             </h2>
           </div>
           
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             {emergencyContacts.map((contact, idx) => (
               <div 
                 key={idx}
@@ -1520,7 +1542,7 @@ const ExpeditionPlanner = () => {
       )}
 
       {/* Notifications */}
-      <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm">
+      <div className="fixed bottom-4 right-2 sm:right-4 z-50 space-y-2 max-w-[calc(100vw-1rem)] sm:max-w-sm">
         {notifications.map((notification) => (
           <div
             key={notification.id}
@@ -1547,7 +1569,7 @@ const ExpeditionPlanner = () => {
 
       {/* Location Permission Prompt */}
       {locationPermission === 'denied' && (
-        <div className="fixed bottom-4 left-4 z-50 max-w-sm">
+        <div className="fixed bottom-4 left-2 sm:left-4 z-50 max-w-[calc(100vw-1rem)] sm:max-w-sm">
           <div className="glass-card rounded-xl p-4 border border-amber-500/30 bg-amber-500/10">
             <p className="text-white text-sm mb-3">
               Enable location to get alerts for nearby checkpoints and attractions!
@@ -1570,7 +1592,7 @@ const ExpeditionPlanner = () => {
 
       {/* Nearby Attractions Panel */}
       {nearbyAttractions.length > 0 && currentLocation && (
-        <div className="fixed top-20 right-4 z-40 max-w-xs">
+        <div className="fixed top-20 right-2 sm:right-4 z-40 max-w-[calc(100vw-1rem)] sm:max-w-xs">
           <div className="glass-card rounded-xl p-4 border border-blue-500/30">
             <h4 className="text-blue-400 text-sm font-medium mb-3 flex items-center gap-2">
               <span>📍</span> Nearby Attractions
