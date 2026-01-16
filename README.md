@@ -10,8 +10,6 @@ A beautiful, interactive Progressive Web App (PWA) for planning and tracking you
 
 **[👉 View Live App on GitHub Pages](https://kanumuri9593.github.io/r1t-expedition)**
 
-![Preview](https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800)
-
 ## 🌟 What This App Does
 
 Plan, track, and navigate your 5-day, 1,400+ mile R1T expedition with:
