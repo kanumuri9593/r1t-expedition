@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/r1t-expedition/static/css/main.67a256da.css",
-    "main.js": "/r1t-expedition/static/js/main.03b5424f.js",
+    "main.css": "/r1t-expedition/static/css/main.b1acdd8a.css",
+    "main.js": "/r1t-expedition/static/js/main.eb41942a.js",
     "index.html": "/r1t-expedition/index.html",
-    "main.67a256da.css.map": "/r1t-expedition/static/css/main.67a256da.css.map",
-    "main.03b5424f.js.map": "/r1t-expedition/static/js/main.03b5424f.js.map"
+    "main.b1acdd8a.css.map": "/r1t-expedition/static/css/main.b1acdd8a.css.map",
+    "main.eb41942a.js.map": "/r1t-expedition/static/js/main.eb41942a.js.map"
   },
   "entrypoints": [
-    "static/css/main.67a256da.css",
-    "static/js/main.03b5424f.js"
+    "static/css/main.b1acdd8a.css",
+    "static/js/main.eb41942a.js"
   ]
 }
