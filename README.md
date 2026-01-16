@@ -1,5 +1,9 @@
 # 🚗 R1T Southern Coast Expedition Planner
 
+<div align="center">
+  <img src="public/r1tsticker.png" alt="Rivian R1T Sticker" width="400" />
+</div>
+
 A beautiful, interactive Progressive Web App (PWA) for planning and tracking your ultimate Rivian R1T road trip from Jersey City to Cape Lookout. Perfect for iPhone installation and offline use during your adventure.
 
 ## 🌐 Live App
