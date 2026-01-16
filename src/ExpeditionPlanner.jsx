@@ -817,6 +817,11 @@ const ExpeditionPlanner = () => {
           
           <div className="flex flex-wrap justify-center gap-6 md:gap-12 mb-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
             <div className="text-center">
+              <p className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>Two Friends</p>
+              <p className="text-white/40 text-sm tracking-wider uppercase">Adventurers</p>
+            </div>
+            <div className="w-px bg-white/10 hidden md:block" />
+            <div className="text-center">
               <p className="text-4xl md:text-5xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>1,400+</p>
               <p className="text-white/40 text-sm tracking-wider uppercase">Miles</p>
             </div>
@@ -839,28 +844,6 @@ const ExpeditionPlanner = () => {
             <span className="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-white/70">✦ Wild Horses</span>
           </div>
           
-          <div className="mt-12 animate-slide-up" style={{ animationDelay: '0.5s' }}>
-            <div className="inline-flex flex-col items-center glass-card rounded-3xl p-6">
-              <div className="relative w-28 h-28 mb-3">
-                <svg className="w-full h-full progress-ring" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="6" />
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="url(#progressGradient)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${progress * 2.83} 283`} className="transition-all duration-700" />
-                  <defs>
-                    <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#fbbf24" />
-                      <stop offset="100%" stopColor="#f59e0b" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-2xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>{progress}%</span>
-                </div>
-              </div>
-              <p className="text-white/60 text-sm" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
-                {completedCount}/{totalItems} checklist ready
-              </p>
-            </div>
-          </div>
         </div>
         
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 animate-bounce">
@@ -884,7 +867,7 @@ const ExpeditionPlanner = () => {
           </div>
           
           {/* Day Selector */}
-          <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin">
+          <div className="flex gap-2 mb-8 overflow-x-auto pb-2 scrollbar-thin justify-center">
             {dayItineraries.map((day, idx) => (
               <button
                 key={idx}
@@ -1144,6 +1127,270 @@ const ExpeditionPlanner = () => {
                 </div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* Rivian R1T Vehicle Specs Section */}
+      <section className="relative py-20 px-6">
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950" />
+        <div className="absolute inset-0 noise-overlay pointer-events-none" />
+        
+        <div className="relative z-10 max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="text-center mb-12">
+            <p className="text-amber-400/80 tracking-[0.3em] uppercase text-sm mb-4" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+              The Vehicle
+            </p>
+            <h2 className="text-4xl md:text-5xl font-light text-white mb-6" style={{ fontFamily: 'Playfair Display, serif' }}>
+              Rivian <span className="text-gradient">R1T</span>
+            </h2>
+          </div>
+
+          {/* Main Content */}
+          <div className="glass-card rounded-3xl overflow-hidden p-8 lg:p-12">
+            {/* Model Title and Badge */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-3 px-6 py-3 bg-black/70 backdrop-blur-sm rounded-full border border-amber-500/30 mb-6">
+                <p className="text-amber-400 text-lg font-medium" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                  🛻 Performance Dual Max
+                </p>
+              </div>
+              <h3 className="text-3xl font-light text-white mb-2" style={{ fontFamily: 'Playfair Display, serif' }}>
+                Performance Dual Max
+              </h3>
+              <p className="text-amber-400/80 text-sm uppercase tracking-wider" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                Adventure Package
+              </p>
+            </div>
+
+            {/* Rivian Sticker Image */}
+            <div className="flex justify-center items-center mb-12 px-4">
+              <div 
+                className="relative w-full max-w-lg"
+                style={{
+                  minHeight: '300px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <img 
+                  src="/r1tsticker.png"
+                  alt="Rivian R1T Sticker"
+                  className="max-w-full h-auto"
+                  style={{
+                    maxHeight: '500px',
+                    width: 'auto',
+                    height: 'auto',
+                    display: 'block'
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Rivian sticker image loaded successfully');
+                  }}
+                  onError={(e) => {
+                    console.error('❌ Image failed to load from:', e.target.src);
+                    console.error('Current URL:', window.location.href);
+                    console.error('Trying alternative paths...');
+                    // Try with process.env.PUBLIC_URL if available
+                    if (process.env.PUBLIC_URL) {
+                      e.target.src = `${process.env.PUBLIC_URL}/r1tsticker.png`;
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Specifications */}
+            <div>
+
+                {/* Specs Grid */}
+                <div className="space-y-8">
+                  {/* Powertrain & Performance */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">🔋</span>
+                      <h4 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                        Powertrain & Performance
+                      </h4>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Motor Configuration</p>
+                        <p className="text-white text-sm font-medium">Dual Motor (All-Wheel Drive)</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Performance Tier</p>
+                        <p className="text-white text-sm font-medium">Performance Dual Motor</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>0–60 mph</p>
+                        <p className="text-white text-sm font-medium">~3.4 seconds</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Drive Modes</p>
+                        <p className="text-white text-sm font-medium">All-Purpose, Sport, Conserve, Off-Road</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Battery & Range */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">🔋</span>
+                      <h4 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                        Battery & Range
+                      </h4>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Battery Pack</p>
+                        <p className="text-white text-sm font-medium">Max Pack</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Usable Capacity</p>
+                        <p className="text-white text-sm font-medium">~149 kWh</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 md:col-span-2">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>EPA-Estimated Range (21" Road wheels)</p>
+                        <p className="text-emerald-400 text-sm font-medium">Up to ~420 miles (≈ 676 km) in Conserve mode</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>DC Fast Charging</p>
+                        <p className="text-white text-sm font-medium">Up to ~220 kW</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Level-2 AC Charging</p>
+                        <p className="text-white text-sm font-medium">~25–30 miles/hour (11.5 kW)</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Wheels & Suspension */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">🛞</span>
+                      <h4 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                        Wheels & Suspension
+                      </h4>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Wheels</p>
+                        <p className="text-white text-sm font-medium">21" Road</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-white/5 border border-white/10 md:col-span-2">
+                        <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Suspension</p>
+                        <p className="text-white text-sm font-medium">Adaptive Air Suspension • Adjustable ride height • Auto-leveling • On-road + off-road tuning</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Driver Assistance */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">🧭</span>
+                      <h4 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                        Driver Assistance
+                      </h4>
+                    </div>
+                    <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+                      <p className="text-blue-400 text-sm font-medium mb-3" style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        System: Driver+
+                      </p>
+                      <div className="grid md:grid-cols-2 gap-2">
+                        <p className="text-white/70 text-xs">• Highway Assist (hands-on)</p>
+                        <p className="text-white/70 text-xs">• Adaptive Cruise Control</p>
+                        <p className="text-white/70 text-xs">• Lane Keep Assist</p>
+                        <p className="text-white/70 text-xs">• Blind Spot Monitoring</p>
+                        <p className="text-white/70 text-xs">• Automatic Emergency Braking</p>
+                        <p className="text-white/70 text-xs">• Driver Monitoring Camera</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Exterior & Interior */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="text-2xl">🏔️</span>
+                        <h4 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                          Exterior
+                        </h4>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Color</p>
+                          <p className="text-white text-sm font-medium">El Cap Granite</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Body Style</p>
+                          <p className="text-white text-sm font-medium">Quad-cab electric pickup</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Lighting</p>
+                          <p className="text-white text-sm font-medium">Signature Rivian LED light bar</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-3 mb-4">
+                        <span className="text-2xl">🪵</span>
+                        <h4 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                          Interior
+                        </h4>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Interior Color</p>
+                          <p className="text-white text-sm font-medium">Black Mountain</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Trim</p>
+                          <p className="text-white text-sm font-medium">Dark Ash Wood</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Seating</p>
+                          <p className="text-white text-sm font-medium">Premium vegan leather</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+                          <p className="text-white/50 text-xs mb-1" style={{ fontFamily: 'JetBrains Mono, monospace' }}>Cabin Philosophy</p>
+                          <p className="text-white text-sm font-medium">Minimalist, sustainable materials</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Adventure Package Highlights */}
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <span className="text-2xl">🧰</span>
+                      <h4 className="text-xl font-light text-white" style={{ fontFamily: 'Playfair Display, serif' }}>
+                        Adventure Package Highlights
+                      </h4>
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-3">
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                        <p className="text-amber-400 text-sm font-medium">Gear Tunnel</p>
+                        <p className="text-white/60 text-xs mt-1">Iconic R1T feature</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                        <p className="text-amber-400 text-sm font-medium">Powered Tonneau</p>
+                        <p className="text-white/60 text-xs mt-1">Compatibility included</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                        <p className="text-amber-400 text-sm font-medium">120V Outlets + Air Compressor</p>
+                        <p className="text-white/60 text-xs mt-1">Multiple outlets</p>
+                      </div>
+                      <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                        <p className="text-amber-400 text-sm font-medium">Heavy-Duty Protection</p>
+                        <p className="text-white/60 text-xs mt-1">Skid protection & tow hooks</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
           </div>
         </div>
       </section>
