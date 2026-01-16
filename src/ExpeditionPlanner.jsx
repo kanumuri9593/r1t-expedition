@@ -802,10 +802,10 @@ const ExpeditionPlanner = () => {
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
-          <div 
-            className="absolute inset-0 opacity-30"
+          <div
+            className="absolute inset-0 opacity-40"
             style={{
-              backgroundImage: `url("https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=1920")`,
+              backgroundImage: `url("${process.env.PUBLIC_URL}/r1t.jpg")`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               filter: 'saturate(0.3)',
